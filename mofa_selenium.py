@@ -1,13 +1,10 @@
 import time
 import os
 import easyocr
-import cv2
-import numpy as np
 import re
 import base64
-import glob
-import shutil
 from pathlib import Path
+from PIL import Image, ImageEnhance, ImageFilter
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -42,7 +39,7 @@ class MOFAVisaBot:
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         
-        # مسار Chromium في Railway
+        # مسار Chromium
         chrome_options.binary_location = "/usr/bin/chromium"
         
         # إعدادات للطباعة
@@ -61,29 +58,36 @@ class MOFAVisaBot:
         self.wait = WebDriverWait(self.driver, 20)
     
     def _solve_captcha(self):
-        """حل الكابتشا باستخدام EasyOCR"""
+        """حل الكابتشا باستخدام EasyOCR و PIL فقط (بدون OpenCV)"""
         try:
             captcha_img = self.driver.find_element(By.ID, "imgCaptcha")
             captcha_img.screenshot('captcha_temp.png')
             
-            # قراءة الصورة
-            img = cv2.imread('captcha_temp.png')
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            denoised = cv2.medianBlur(thresh, 3)
+            # تحسين الصورة باستخدام PIL فقط
+            img = Image.open('captcha_temp.png')
+            
+            # تحويل إلى تدرج الرمادي
+            img = img.convert('L')
+            
+            # زيادة التباين
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(2.0)
+            
+            # عتبة بسيطة (أسود وأبيض)
+            img = img.point(lambda x: 0 if x < 128 else 255, '1')
+            
+            # إزالة الضوضاء
+            img = img.filter(ImageFilter.MedianFilter(size=3))
             
             # تكبير الصورة
-            scale_percent = 150
-            width = int(denoised.shape[1] * scale_percent / 100)
-            height = int(denoised.shape[0] * scale_percent / 100)
-            enlarged = cv2.resize(denoised, (width, height), interpolation=cv2.INTER_CUBIC)
+            width, height = img.size
+            img = img.resize((int(width * 1.5), int(height * 1.5)), Image.Resampling.LANCZOS)
             
-            enhanced_path = 'captcha_enhanced.png'
-            cv2.imwrite(enhanced_path, enlarged)
+            img.save('captcha_enhanced.png')
             
             # EasyOCR
             result = self.reader.readtext(
-                enhanced_path, 
+                'captcha_enhanced.png', 
                 paragraph=False, 
                 allowlist='0123456789',
                 text_threshold=0.5,
