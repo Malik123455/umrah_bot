@@ -1,0 +1,10 @@
+python-telegram-bot==20.6
+selenium==4.15.2
+easyocr==1.7.0
+opencv-python==4.8.1.78
+pillow==10.1.0
+numpy==1.24.3
+reportlab==4.0.9
+beautifulsoup4==4.12.2
+img2pdf==0.4.4
+webdriver-manager==4.0.1
