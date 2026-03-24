@@ -22,50 +22,36 @@ async def handle_passport(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     msg = await update.message.reply_text(
         f"🔍 جاري الاستعلام عن التأشيرة برقم: `{passport_number}`\n"
-        f"⏳ جاري فتح المتصفح وحل رمز التحقق... يرجى الانتظار (30-60 ثانية)",
+        f"⏳ جاري البحث... يرجى الانتظار",
         parse_mode='Markdown'
     )
     
     bot = None
     try:
-        # إنشاء كائن البوت
-        bot = MOFAVisaBot(headless=False)
-        
-        # البحث عن التأشيرة
+        # headless=True للتشغيل بدون فتح متصفح مرئي
+        bot = MOFAVisaBot(headless=True)
         result = bot.search_visa(passport_number, first_name="محمد")
         
         if result['success']:
             pdf_path = result['pdf_path']
             visa_data = result.get('visa_data', {})
             
-            # إرسال PDF
             with open(pdf_path, 'rb') as pdf:
                 await update.message.reply_document(
                     document=pdf,
                     filename=os.path.basename(pdf_path),
                     caption=f"✅ *تم العثور على التأشيرة*\n\n"
                             f"👤 *الاسم:* {visa_data.get('full_name', 'غير متوفر')}\n"
-                            f"🆔 *رقم الجواز:* {visa_data.get('passport_number', passport_number)}\n"
-                            f"📄 تم إنشاء PDF بنفس تنسيق الصفحة الأصلية",
+                            f"🆔 *رقم الجواز:* {visa_data.get('passport_number', passport_number)}",
                     parse_mode='Markdown'
                 )
             
-            # حذف الملف المؤقت بعد الإرسال
             if os.path.exists(pdf_path):
                 os.remove(pdf_path)
             
             await msg.edit_text("✅ تم استخراج التأشيرة بنجاح!")
         else:
-            await msg.edit_text(
-                f"❌ {result['message']}\n\n"
-                f"🔗 يمكنك الاستعلام يدوياً:\n"
-                f"https://visa.mofa.gov.sa/Visaservices/SearchVisa\n\n"
-                f"📌 البيانات المطلوبة:\n"
-                f"• رقم الجواز: {passport_number}\n"
-                f"• الاسم الأول: محمد\n"
-                f"• الجنسية: اليمن\n"
-                f"• رمز التحقق: كما في الصورة"
-            )
+            await msg.edit_text(f"❌ {result['message']}")
     except Exception as e:
         await msg.edit_text(f"❌ حدث خطأ: {str(e)}")
     finally:
@@ -73,7 +59,6 @@ async def handle_passport(update: Update, context: ContextTypes.DEFAULT_TYPE):
             bot.close()
 
 def main():
-    # التأكد من وجود مجلد outputs
     os.makedirs("outputs", exist_ok=True)
     
     app = Application.builder().token(TOKEN).build()
@@ -81,7 +66,6 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_passport))
     
     print("🚀 بوت تلجرام يعمل...")
-    print("📌 أرسل رقم الجواز للاستعلام عن التأشيرة")
     app.run_polling()
 
 if __name__ == '__main__':
