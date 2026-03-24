@@ -1,7 +1,4 @@
-# config.py - ملف الإعدادات
+import os
 
-# توكن البوت من BotFather
-TOKEN = "8626596583:AAFPg_IL-4kCqpgawNITmTnEFsSpCk5tJ9I"
-
-# معرف المسؤول
+TOKEN = os.environ.get('TOKEN', "8626596583:AAFPg_IL-4kCqpgawNITmTnEFsSpCk5tJ9I")
 ADMIN_ID = 7172179133
