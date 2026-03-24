@@ -28,7 +28,6 @@ async def handle_passport(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     bot = None
     try:
-        # headless=True للتشغيل بدون فتح متصفح مرئي
         bot = MOFAVisaBot(headless=True)
         result = bot.search_visa(passport_number, first_name="محمد")
         
