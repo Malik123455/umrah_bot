@@ -39,7 +39,7 @@ class MOFAVisaBot:
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         
-        # مسار Chromium
+        # مسار Chromium (لـ Linux/Render)
         chrome_options.binary_location = "/usr/bin/chromium"
         
         # إعدادات للطباعة
@@ -58,31 +58,22 @@ class MOFAVisaBot:
         self.wait = WebDriverWait(self.driver, 20)
     
     def _solve_captcha(self):
-        """حل الكابتشا باستخدام EasyOCR و PIL فقط (بدون OpenCV)"""
+        """حل الكابتشا باستخدام PIL و EasyOCR (بدون OpenCV)"""
         try:
             captcha_img = self.driver.find_element(By.ID, "imgCaptcha")
             captcha_img.screenshot('captcha_temp.png')
             
-            # تحسين الصورة باستخدام PIL فقط
+            # تحسين الصورة باستخدام PIL
             img = Image.open('captcha_temp.png')
-            
-            # تحويل إلى تدرج الرمادي
-            img = img.convert('L')
-            
-            # زيادة التباين
+            img = img.convert('L')  # تحويل لتدرج الرمادي
             enhancer = ImageEnhance.Contrast(img)
-            img = enhancer.enhance(2.0)
-            
-            # عتبة بسيطة (أسود وأبيض)
-            img = img.point(lambda x: 0 if x < 128 else 255, '1')
-            
-            # إزالة الضوضاء
-            img = img.filter(ImageFilter.MedianFilter(size=3))
+            img = enhancer.enhance(2.0)  # زيادة التباين
+            img = img.point(lambda x: 0 if x < 128 else 255, '1')  # عتبة بسيطة
+            img = img.filter(ImageFilter.MedianFilter(size=3))  # إزالة الضوضاء
             
             # تكبير الصورة
             width, height = img.size
             img = img.resize((int(width * 1.5), int(height * 1.5)), Image.Resampling.LANCZOS)
-            
             img.save('captcha_enhanced.png')
             
             # EasyOCR
@@ -95,6 +86,7 @@ class MOFAVisaBot:
                 mag_ratio=1.5
             )
             
+            # استخراج الأرقام
             captcha_text = ''
             for detection in result:
                 text = detection[1]
