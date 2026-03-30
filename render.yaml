@@ -1,0 +1,9 @@
+services:
+  - type: worker
+    name: umrah-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: TOKEN
+        value: 8626596583:AAFPg_IL-4kCqpgawNITmTnEFsSpCk5tJ9I
